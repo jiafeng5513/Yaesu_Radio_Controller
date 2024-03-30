@@ -45,8 +45,15 @@
 ### 树莓派方式
 
 1. 让您的树莓派接入网络
-
-2. 从以上第2步开始
+2. 树莓派安装conda
+```bash
+wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh
+bash Miniforge3-Linux-aarch64.sh -b -p <where to install miniforge3>
+cd <where to install miniforge3>/bin
+./conda init
+source ~/.bashrc
+```
+3. 从以上第2步开始
 
 
 ## 代码结构说明
@@ -116,23 +123,3 @@
         - 开源的RTL-SDR软件也有linux版或源码版, 可以将您的电视棒或其他SDR连接树莓派
     - 为您的各种通联提供各种便利
         - 以上的各种功能, 都可以找到国内外大神提供的代码资源, 整合开发, 完成您自己的软件作品吧
-
-6. 您可以提供哪些帮助?
-
-    - 我需要以下几方面的帮助, 如果您能提供, 将无尽感激
-    - 硬件
-        - 能提供测试机(8x7)或远程提供测试环境(将您的设备连接PC并通过Teamviewer共享给我使用)
-        - 电子线路设计经验
-        - 逻辑分析仪
-    - 软件
-        - python开发者
-        - UI设计师
-        - 各种资深开发者
-    - 资金
-        - 我将很感谢您的赞助, 并保证将全部赞助收入投入该项目.
-
-最后, 欢迎各位HAM提供意见或建议, 特别是技术上的支持, 感谢各位的支持.
-
-## 联系方式
-
-- QQ群: 949688897
