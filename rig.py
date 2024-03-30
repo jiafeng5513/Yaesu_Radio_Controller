@@ -41,14 +41,14 @@ class YAESU_CAT3(serial.Serial, object):
             timeout=0.1
         )
         with open('conf/YAESU_CAT3.yaml','r') as f:
-            self.__func = yaml.load(f)[model]
+            self.__func = yaml.load(f, Loader = yaml.FullLoader)[model]
 
     def cmd_r(self, command):
         # print 'READ: %s' % command
         self.write(command.encode('utf-8'))
         line = ''
         while True:
-            c = self.read(1)
+            c = self.read(1).decode("utf-8")
             # print c
             if c == ';':
                 if line == '?':
@@ -57,7 +57,10 @@ class YAESU_CAT3(serial.Serial, object):
                     line = line + ';'
                     # print 'ANSR: %s' % line
                     break
+            # print("line.type = {}, line = {}".format(type(line), line))
+            # print("c.type = {}, c = {}".format(type(c), c))
             line = line + c
+            
         return line
 
     def cmd_w(self, command):
@@ -68,26 +71,26 @@ class YAESU_CAT3(serial.Serial, object):
     def func(self, func_name, **kwargs):
         # print '[FUNC_EXEC@%s]: %s' % (func_name[-3:], func_name)
 
-        if self.__func.has_key(func_name):  # 检查配置文件中是否有该指令
+        if func_name in self.__func:  # 检查配置文件中是否有该指令
             if func_name.endswith('_GET'):
                 cmd_ret = {}
                 ret = self.cmd_r(self.__func[func_name]['CMD'])
                 # print func_name, ret
-                for k,v in self.__func[func_name]['RET'].iteritems():
+                for k,v in self.__func[func_name]['RET'].items():
                     ret_seg = ret[eval(v)[0]:eval(v)[1]]
-                    if self.__func[func_name]['DIM'] is not None and self.__func[func_name]['DIM'].has_key(k):
+                    if self.__func[func_name]['DIM'] is not None and k in self.__func[func_name]['DIM']:
                         cmd_ret[k] = self.__func[func_name]['DIM'][k].get(ret_seg, 'UNKNOWN')
-                    elif self.__func[func_name]['CONVERT'] is not None and self.__func[func_name]['CONVERT'].has_key(k):
+                    elif self.__func[func_name]['CONVERT'] is not None and k in self.__func[func_name]['CONVERT']:
                         cmd_ret[k] = int(round(eval(self.__func[func_name]['CONVERT'][k].replace('x', str(int(ret_seg))))))
                     else:
                         cmd_ret[k] = ret_seg
                 return cmd_ret
             elif func_name.endswith('_SET'):  
                 command = self.__func[func_name]['CMD']
-                for k,v in kwargs.iteritems():  # 将函数入参转换格式后进行替换
-                    if self.__func[func_name]['DIM'] is not None and self.__func[func_name]['DIM'].has_key(k):
+                for k,v in kwargs.items():  # 将函数入参转换格式后进行替换
+                    if self.__func[func_name]['DIM'] is not None and k in self.__func[func_name]['DIM']:
                         command = command.replace('{$'+k+'}', self.__func[func_name]['DIM'][k][v])
-                    elif self.__func[func_name]['CONVERT'] is not None and self.__func[func_name]['CONVERT'].has_key(k):
+                    elif self.__func[func_name]['CONVERT'] is not None and k in self.__func[func_name]['CONVERT']:
                         conv_val = int(round(eval(self.__func[func_name]['CONVERT'][k]['EXPS'].replace('x', str(v)))))
                         form = self.__func[func_name]['CONVERT'][k]['FORM'].split('|')
                         if form[0] == 'L':
@@ -101,9 +104,9 @@ class YAESU_CAT3(serial.Serial, object):
                         command = command.replace('{$'+k+'}', v)
                 self.cmd_w(command)  # 发送命令
             else:
-                print '[FUNC_EXEC]: UNKNOWN TYPE - %s' % func_name
+                print('[FUNC_EXEC]: UNKNOWN TYPE - %s' % func_name)
         else:
-            print '[FUNC_EXEC]: NOT SUPPORT - %s' % func_name
+            print('[FUNC_EXEC]: NOT SUPPORT - %s' % func_name)
     
     def button_func(self, button_command, **kwargs):
         pass
@@ -246,7 +249,7 @@ class YAESU_CAT3(serial.Serial, object):
 
 class FT891(YAESU_CAT3, object):
     def __init__(self):
-        print 'You get a FT891'
+        print('You get a FT891')
         super(FT891, self).__init__(
             model='FT-891'
             ,port='/dev/ttyUSB0'

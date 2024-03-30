@@ -7,7 +7,7 @@ import random
 import datetime
 import time
 import yaml
-import Queue
+import queue
 import threading
 import pygame
 from pygame.locals import *
@@ -72,12 +72,13 @@ meter_custom_val = 0
 
 current_panel = 'MODE'
 
-rig_job_queue = Queue.Queue()
+rig_job_queue = queue.Queue()
 
 class Rig_Polling(threading.Thread):
     """ Class for Rig Polling Thread """
-    def __init__(self, radio_model):
+    def __init__(self, radio_model, daemon):
         super(Rig_Polling, self).__init__()
+        self.daemon = daemon
         creator = rig.RIG()
         self.rig = creator.connect(radio_model)
         self.button_funcs = {
@@ -144,10 +145,10 @@ class Rig_Polling(threading.Thread):
             # thread job operation
             try:
                 recv_job = rig_job_queue.get_nowait()
-            except Queue.Empty:
+            except queue.Empty:
                 pass
             else:
-                print recv_job
+                print(recv_job)
                 self.rig.cmd_w(self.button_funcs[recv_job])
             
             # continue
@@ -261,11 +262,11 @@ class Button(object):
             # self.funcs[self.func]()
             # print self.func
             if self.type == 'CAT':
-                print self.func
+                print(self.func)
                 global rig_job_queue
                 rig_job_queue.put(self.func)
             elif self.type == 'PANEL':
-                print self.func
+                print(self.func)
                 global current_panel
                 current_panel = self.func
             self.pressed = False
@@ -311,8 +312,8 @@ class Remote_Controller(object):
         self.model = model
 
         with open('conf/layout.yaml','r') as f:
-             ui_conf = yaml.load(f)[resolution]
-        print resolution, ui_conf['RESOLUTION']
+             ui_conf = yaml.load(f, Loader = yaml.FullLoader)[resolution]
+        print(resolution, ui_conf['RESOLUTION'])
         self.__layout = ui_conf
         
         self.screen = pygame.display.set_mode(eval(ui_conf['RESOLUTION']), display_mode, 32)
@@ -451,7 +452,7 @@ class Remote_Controller(object):
 
     def init_resouce(self):
         """ init resouce of screen element """
-        for k, v in self.__layout['ELEMENTS'].iteritems():
+        for k, v in self.__layout['ELEMENTS'].items():
             # print k, v
             self.elements[k] = {
                 'POS': eval(v['POS'])
@@ -459,7 +460,7 @@ class Remote_Controller(object):
                 }
 
     def init_func_button(self):
-        for k,v in self.__layout['BUTTON']['GROUP'].iteritems():
+        for k,v in self.__layout['BUTTON']['GROUP'].items():
             self.buttons[k] = {}
             # print k,v
             for btn in v:
@@ -473,7 +474,7 @@ class Remote_Controller(object):
                 )
     
     def init_panel_button(self):
-        for btn, attr in self.__layout['BUTTON']['PANEL'].iteritems():
+        for btn, attr in self.__layout['BUTTON']['PANEL'].items():
             self.panel_buttons[btn] = Button(
                 self.screen
                 ,attr['UP']
@@ -500,21 +501,21 @@ class Remote_Controller(object):
 
     def draw_icons(self):
         """ draw all icons res """
-        for k, v in self.icons.iteritems():
+        for k, v in self.icons.items():
             self.screen.blit(self.elements[k]['RES'][v], self.elements[k]['POS'])
     
     def draw_values(self):
         """ draw all values res """
-        for k, v in self.values.iteritems():
+        for k, v in self.values.items():
             self.screen.blit(self.elements[k]['RES'][v], self.elements[k]['POS'])
 
     def draw_meters(self):
         """ draw meters in config """
         # draw meter background
-        for k, v in self.meter_select.iteritems():
+        for k, v in self.meter_select.items():
             self.screen.blit(self.elements[k]['RES'][v], self.elements[k]['POS'])
         # draw meter bar
-        for k, v in self.meter_values.iteritems():
+        for k, v in self.meter_values.items():
             if v > 0:
                 pygame.draw.rect(
                     self.screen
@@ -526,20 +527,20 @@ class Remote_Controller(object):
                 )
     
     def draw_buttons(self):
-        for btn in self.buttons[self.icons['PANEL']].values():
+        for btn in list(self.buttons[self.icons['PANEL']].values()):
             btn.render()
-        for btn in self.panel_buttons.values():
+        for btn in list(self.panel_buttons.values()):
             btn.render()
 
     def test_buttons(self, x, y, event):
-        for btn in self.buttons[self.icons['PANEL']].values():
+        for btn in list(self.buttons[self.icons['PANEL']].values()):
             btn.test_pressed(x, y, event)
-        for btn in self.panel_buttons.values():
+        for btn in list(self.panel_buttons.values()):
             btn.test_pressed(x, y, event)
 
     def draw_warning(self):
         """ draw warning box """
-        for k, v in self.warn_box.iteritems():
+        for k, v in self.warn_box.items():
             self.screen.blit(self.elements[k]['RES'][v], self.elements[k]['POS'])
 
     def clock(self, timezone='Asia/Shanghai'):
@@ -680,7 +681,7 @@ class Remote_Controller(object):
         pygame.display.update()
 
 def main():
-    os.chdir('/home/pi/Yaesu_Radio_Controller')
+    os.chdir('/home/anna/WorkSpace/Yaesu_Radio_Controller')
     pygame.init()
     # pygame.mouse.set_visible(False)
 
@@ -691,11 +692,11 @@ def main():
     elif (480,320) in all_support_display_modes:
         screen_resolution = 'HVGA'
     else:
-        print 'UNSUPPORTED RESOLUTION. (Only VGA or HVGA)'
+        print('UNSUPPORTED RESOLUTION. (Only VGA or HVGA)')
         exit()
 
     with open('conf/custom.yaml','r') as f:
-        custome_config = yaml.load(f)
+        custome_config = yaml.load(f, Loader = yaml.FullLoader)
         model = custome_config['RADIO']['MODEL']
         port = custome_config['RADIO']['PORT']
         baudrate = custome_config['RADIO']['BAUDRATE']
@@ -715,8 +716,8 @@ def main():
     rc.init_panel_button()
 
     # # start daemon threading for rig status polling
-    poll = Rig_Polling(model)
-    poll.setDaemon(True)
+    poll = Rig_Polling(radio_model=model, daemon=True)
+    # poll.setDaemon(True)
     poll.start()
 
     while True:

@@ -83,22 +83,22 @@ class RIG(serial.Serial, object):
         cont = pyudev.Context()
         for dev in cont.list_devices():
             if dev.get('ID_VENDOR_ID') is not None and dev.get('ID_MODEL') is not None:
-                print '[%s:%s:%s]\n  >%s:%s' % (
+                print('[%s:%s:%s]\n  >%s:%s' % (
                     dev.get('ID_VENDOR_ID',''), 
                     dev.get('ID_MODEL_ID',''), 
                     dev.get('SUBSYSTEM',''), 
                     dev.get('DEVNAME',''), 
                     dev.get('ID_MODEL','')
-                )
+                ))
             if (dev.get('ID_VENDOR_ID'), dev.get('ID_MODEL')) in SUPPORTED_DEVICE:
                 if dev.get('SUBSYSTEM') == 'tty':
                     if not os.access(dev.get('DEVNAME', ''), os.W_OK):
-                        print 'Found a compatible radio, but can not write to it.'
+                        print('Found a compatible radio, but can not write to it.')
                     else:
                         return dev
                 else:
-                    print 'Found a compatible radio, but no serial tty.\nPlease run the following commands with root privileges:\n' + \
-                        'modprobe usbserial vendor=0x%s product=0x%s' % (dev.get('ID_VENDOR_ID'), dev.get('ID_MODEL_ID'))
+                    print('Found a compatible radio, but no serial tty.\nPlease run the following commands with root privileges:\n' + \
+                        'modprobe usbserial vendor=0x%s product=0x%s' % (dev.get('ID_VENDOR_ID'), dev.get('ID_MODEL_ID')))
                         
     def get_radio_model(self, dev):
         '''
@@ -119,7 +119,7 @@ class RIG(serial.Serial, object):
         dev_id = sp.read(7)[2:6]
         model = SUPPORTED_MODELS.get(dev_id)
         if model:
-            print 'Radio connected: %s' % model
+            print('Radio connected: %s' % model)
             return model
         sp.flush()
         sp.close()
@@ -127,13 +127,13 @@ class RIG(serial.Serial, object):
     ## >>>>>>>>>>>>>>>>>>>>>>>> Serial Port Operation Function <<<<<<<<<<<<<<<<<<<<<<<<
     def cmd_set(self, command):
         ''' send command (SET) '''
-        print 'SET: %s' % command
+        print('SET: %s' % command)
         self.write(command.encode('utf-8'))
         return
     
     def cmd_read(self, command):
         ''' send command (READ) '''
-        print 'READ: %s' % command
+        print('READ: %s' % command)
         self.write(command.encode('utf-8'))
         line = ''
         while True:
@@ -143,7 +143,7 @@ class RIG(serial.Serial, object):
                     return 'ERROR'
                 else:
                     line = line + ';'
-                    print 'ANSR: %s' % line
+                    print('ANSR: %s' % line)
                     break
             line = line + c
         return line
@@ -161,15 +161,15 @@ class RIG(serial.Serial, object):
         type: choose read or set manually
         '''
         if not skip_check and not self.cmd_check(command):
-            print 'INVALID COMMAND SYNTAX'
+            print('INVALID COMMAND SYNTAX')
             return
 
         cmd_oper = {'SET': self.cmd_set, 'READ': self.cmd_read}
         if oper_type is None:
             # choose by default instructions dict
             ins_type = command[:2]
-            if self.__instruction.has_key(ins_type):
-                for k,v in self.__instruction[ins_type].iteritems():
+            if ins_type in self.__instruction:
+                for k,v in self.__instruction[ins_type].items():
                     if k in ('SET','READ'):
                         if re.match(v, command):    # try to match one of SET/READ
                             return cmd_oper[k](command)
@@ -180,7 +180,7 @@ class RIG(serial.Serial, object):
             # choose by user
             return cmd_oper[k](command)
         else:
-            print 'UNSUPPORTED CMD_TYPE'
+            print('UNSUPPORTED CMD_TYPE')
 
     ## >>>>>>>>>>>>>>>>>>>>>>>> Radio System Function <<<<<<<<<<<<<<<<<<<<<<<<
     
@@ -212,7 +212,7 @@ class RIG(serial.Serial, object):
                 ,'PLAY': self.send(self.__constant['info']['READ']['PLAY'])
                 ,'RX_BUSY': self.send(self.__constant['info']['READ']['RX_BUSY'])
             }
-        elif self.__constant['info']['READ'].has_key(val.upper()):
+        elif val.upper() in self.__constant['info']['READ']:
             ret_val = self.send(self.__constant['info']['READ'][val])
             return
     
@@ -227,11 +227,11 @@ class RIG(serial.Serial, object):
 
         '''
         if key_name.upper() not in ('DIAL_UP','DIAL_DOWN','MULTI_UP','MULTI_DOWN','ENTER','DOWN','UP','BAND_UP','BAND_DOWN'):
-            print 'SEND_KEY: INVALID KEY'
-        elif key_name.upper() not in ('DIAL_UP','DIAL_DOWN','MULTI_UP','MULTI_DOWN') and dup_times <> 1:
-            print 'SEND_KEY: ONLY DIAL OR MULTI CAN USE dup_times'
-        elif key_name.upper() in ('DIAL_UP','DIAL_DOWN','MULTI_UP','MULTI_DOWN') and dup_times not in range(100):
-            print 'SEND_KEY: OUT OF RANGE,(1~99)'
+            print('SEND_KEY: INVALID KEY')
+        elif key_name.upper() not in ('DIAL_UP','DIAL_DOWN','MULTI_UP','MULTI_DOWN') and dup_times != 1:
+            print('SEND_KEY: ONLY DIAL OR MULTI CAN USE dup_times')
+        elif key_name.upper() in ('DIAL_UP','DIAL_DOWN','MULTI_UP','MULTI_DOWN') and dup_times not in list(range(100)):
+            print('SEND_KEY: OUT OF RANGE,(1~99)')
         else:
             key_cmd = self.__constant['key'][key_name.upper()].replace('nn',str(dup_times).rjust(2,'0'))
             self.send(key_cmd)
@@ -246,15 +246,15 @@ class RIG(serial.Serial, object):
         '''
         if val is None:
             ret_val = self.send(self.__constant['lock']['READ'])
-            if self.__constant['lock']['ANSWER'].has_key(ret_val):
+            if ret_val in self.__constant['lock']['ANSWER']:
                 return self.__constant['lock']['ANSWER'][ret_val]
             else:
-                print 'FAIL'
-        elif self.__constant['lock']['SET'].has_key(val.upper()):
+                print('FAIL')
+        elif val.upper() in self.__constant['lock']['SET']:
             self.send(self.__constant['lock']['SET'][val.upper()])
             return self.lock()
         else:
-            print 'LOCK: INVALID PARAMETER'
+            print('LOCK: INVALID PARAMETER')
 
     # not finish
     def power(self, val=None):
@@ -285,7 +285,7 @@ class RIG(serial.Serial, object):
             self.send(self.__constant['af_gain']['SET'].replace('nnn', str(val).rjust(3,'0')))
             return self.af_gain()
         else:
-            print 'AF_GAIN: OUT OF RANGE'
+            print('AF_GAIN: OUT OF RANGE')
 
     def agc(self, val=None):
         '''
@@ -297,15 +297,15 @@ class RIG(serial.Serial, object):
         '''
         if val is None:
             ret_val = self.send(self.__constant['agc']['READ'])
-            if self.__constant['agc']['ANSWER'].has_key(ret_val):
+            if ret_val in self.__constant['agc']['ANSWER']:
                 return self.__constant['agc']['ANSWER'][ret_val]
             else:
                 return 'FAIL'
-        elif self.__constant['agc']['SET'].has_key(val.upper()):
+        elif val.upper() in self.__constant['agc']['SET']:
             self.send(self.__constant['agc']['SET'][val.upper()])
             return self.agc()
         else:
-            print 'AGC: INVALID PARAMETER'
+            print('AGC: INVALID PARAMETER')
 
     def apf(self, status=None, freq=None):
         pass
@@ -320,15 +320,15 @@ class RIG(serial.Serial, object):
         '''
         if val is None:
             ret_val = self.send(self.__constant['att']['READ'])
-            if self.__constant['att']['ANSWER'].has_key(ret_val):
+            if ret_val in self.__constant['att']['ANSWER']:
                 return self.__constant['att']['ANSWER'][ret_val]
             else:
                 return 'FAIL'
-        elif self.__constant['att']['SET'].has_key(val.upper()):
+        elif val.upper() in self.__constant['att']['SET']:
             self.send(self.__constant['att']['SET'][val.upper()])
             return self.att()
         else:
-            print 'ATT: INVALID PARAMETER'
+            print('ATT: INVALID PARAMETER')
 
     def atu(self, val=None):
         '''
@@ -342,15 +342,15 @@ class RIG(serial.Serial, object):
         # error with 'AC;'-'ERROR;' when no atu attached
         if val is None:
             ret_val = self.send(self.__constant['atu']['READ'])
-            if self.__constant['atu']['ANSWER'].has_key(ret_val):
+            if ret_val in self.__constant['atu']['ANSWER']:
                 return self.__constant['atu']['ANSWER'][ret_val]
             else:
-                print 'FAIL'
-        elif self.__constant['atu']['SET'].has_key(val.upper()):
+                print('FAIL')
+        elif val.upper() in self.__constant['atu']['SET']:
             self.send(self.__constant['atu']['SET'][val.upper()])
             return self.atu()
         else:
-            print 'ATU: INVALID PARAMETER'
+            print('ATU: INVALID PARAMETER')
     
     def atu_select(self, val=None):
         '''
@@ -362,15 +362,15 @@ class RIG(serial.Serial, object):
         '''
         if val is None:
             ret_val = self.send(self.__constant['atu']['SELECT']['READ'])
-            if self.__constant['atu']['SELECT']['ANSWER'].has_key(ret_val):
+            if ret_val in self.__constant['atu']['SELECT']['ANSWER']:
                 return self.__constant['atu']['SELECT']['ANSWER'][ret_val]
             else:
-                print 'FAIL'
-        elif self.__constant['atu']['SELECT']['SET'].has_key(val.upper()):
+                print('FAIL')
+        elif val.upper() in self.__constant['atu']['SELECT']['SET']:
             self.send(self.__constant['atu']['SELECT']['SET'][val.upper()])
             return self.atu_select()
         else:
-            print 'ATU_SELECT: INVALID PARAMETER'
+            print('ATU_SELECT: INVALID PARAMETER')
 
     def band(self, val):
         '''
@@ -378,10 +378,10 @@ class RIG(serial.Serial, object):
         SET: band(10)   # switch to 10m band
              band(7M)   # switch to 7MHz band
         '''
-        if self.__constant['band'].has_key(val):
+        if val in self.__constant['band']:
             self.send(self.__constant['band'][val])
         else:
-            print 'BAND: BAND ERROR'
+            print('BAND: BAND ERROR')
     
     # when not in cw mode, send 'BI1;' command will turn on and off bk, but always returns 'BI0;' 
     def bk_in(self, val=None):
@@ -394,15 +394,15 @@ class RIG(serial.Serial, object):
         '''
         if val is None:
             ret_val = self.send(self.__constant['cw']['break_in']['READ'])
-            if self.__constant['cw']['break_in']['ANSWER'].has_key(ret_val):
+            if ret_val in self.__constant['cw']['break_in']['ANSWER']:
                 return self.__constant['cw']['break_in']['ANSWER'][ret_val]
             else:
-                print 'FAIL'
-        elif self.__constant['cw']['break_in']['SET'].has_key(val.upper()):
+                print('FAIL')
+        elif val.upper() in self.__constant['cw']['break_in']['SET']:
             self.send(self.__constant['cw']['break_in']['SET'][val.upper()])
             return self.bk_in()
         else:
-            print 'BK-IN: INVALID PARAMETER'
+            print('BK-IN: INVALID PARAMETER')
 
     def bk_in_type(self, val=None):
         pass
@@ -477,7 +477,7 @@ class RIG(serial.Serial, object):
         led_value = str(led).rjust(2,'0') if led in range(1,16) else ret_val[8:10]
         dimmer_str = contrast_val+key_value+lcd_value+led_value
 
-        if dimmer_str <> ret_val[2:10]:
+        if dimmer_str != ret_val[2:10]:
             self.send('DA' + dimmer_str + ';')
         else:
             return {
@@ -498,11 +498,11 @@ class RIG(serial.Serial, object):
         if val is None:
             ret_val = self.send(self.__constant['fast']['READ'])
             return self.__constant['fast']['ANSWER'][ret_val]
-        elif self.__constant['fast']['SET'].has_key(val.upper()):
+        elif val.upper() in self.__constant['fast']['SET']:
             self.send(self.__constant['fast']['SET'][val.upper()])
             return self.fast()
         else:
-            print 'FAST: INVALID PARAMETER'
+            print('FAST: INVALID PARAMETER')
 
     def if_shift(self,status=None, shift=None):
         pass
@@ -517,15 +517,15 @@ class RIG(serial.Serial, object):
         '''
         if val is None:
             ret_val = self.send(self.__constant['ipo']['READ'])
-            if self.__constant['ipo']['ANSWER'].has_key(ret_val):
+            if ret_val in self.__constant['ipo']['ANSWER']:
                 return self.__constant['ipo']['ANSWER'][ret_val]
             else:
-                print 'FAIL'
-        elif self.__constant['ipo']['SET'].has_key(val.upper()):
+                print('FAIL')
+        elif val.upper() in self.__constant['ipo']['SET']:
             self.send(self.__constant['ipo']['SET'][val.upper()])
             return self.ipo()
         else:
-            print 'IPO: INVALID PARAMETER'
+            print('IPO: INVALID PARAMETER')
 
     def load_message(self, val=None):
         ''' load message'''
@@ -561,11 +561,11 @@ class RIG(serial.Serial, object):
                 'SWR': int(swr_val[3:-1]),
                 'ID': int(id_val[3:-1])
               }
-        elif self.__constant['meter']['READ'].has_key(val.upper()):
+        elif val.upper() in self.__constant['meter']['READ']:
             ret_val = self.send(self.__constant['meter']['READ'][val.upper()])
             return int(ret_val[3:-1])
         else:
-            print 'METER: INVALID PARAMETER'
+            print('METER: INVALID PARAMETER')
 
     def meter_select(self, val=None):
         '''
@@ -577,15 +577,15 @@ class RIG(serial.Serial, object):
         '''
         if val is None:
             ret_val = self.send(self.__constant['meter']['SELECT']['READ'])
-            if self.__constant['meter']['SELECT']['ANSWER'].has_key(ret_val):
+            if ret_val in self.__constant['meter']['SELECT']['ANSWER']:
                 return self.__constant['meter']['SELECT']['ANSWER'][ret_val]
             else:
-                print 'FAIL'
-        elif self.__constant['meter']['SELECT']['SET'].has_key(val.upper()):
+                print('FAIL')
+        elif val.upper() in self.__constant['meter']['SELECT']['SET']:
             self.send(self.__constant['meter']['SELECT']['SET'][val.upper()])
             return self.meter_select()
         else:
-            print 'METER_SELECT: INVALID PARAMETER'
+            print('METER_SELECT: INVALID PARAMETER')
 
     def mic_gain(self, val=None):
         pass
@@ -601,15 +601,15 @@ class RIG(serial.Serial, object):
         '''
         if val is None:
             ret_val = self.send(self.__constant['mode']['READ'])
-            if self.__constant['mode']['ANSWER'].has_key(ret_val):
+            if ret_val in self.__constant['mode']['ANSWER']:
                 return self.__constant['mode']['ANSWER'][ret_val]
             else:
-                print 'FAIL'
-        elif self.__constant['mode']['SET'].has_key(val.upper()):
+                print('FAIL')
+        elif val.upper() in self.__constant['mode']['SET']:
             self.send(self.__constant['mode']['SET'][val.upper()])
             return self.mode()
         else:
-            print 'MODE: INVALID PARAMETER'
+            print('MODE: INVALID PARAMETER')
 
     # new
     def monitor(self, val=None):
@@ -627,21 +627,21 @@ class RIG(serial.Serial, object):
         '''
         if val is None:
             ret_val = self.send(self.__constant['monitor']['READ'])
-            if self.__constant['monitor']['ANSWER'].has_key(ret_val):
+            if ret_val in self.__constant['monitor']['ANSWER']:
                 mon_status = self.__constant['monitor']['ANSWER'][ret_val]
             else:
-                print 'FAIL'
+                print('FAIL')
                 return
             mon_level = int(self.send(self.__constant['monitor']['LEVEL']['READ'])[3:-1])
             return mon_status, mon_level
-        elif self.__constant['monitor']['SET'].has_key(val.upper()):
+        elif val.upper() in self.__constant['monitor']['SET']:
             self.send(self.__constant['monitor']['SET'][val.upper()])
             return self.monitor()
         elif val in range(101):
             self.send(self.__constant['monitor']['LEVEL']['SET'].replace('nnn',str(val).rjust(3,'0')))
             return self.monitor()
         else:
-            print 'MONITOR: INVALID PARAMETER'
+            print('MONITOR: INVALID PARAMETER')
             
     # Transmit activated when ON
     def mox(self, val=None):
@@ -654,15 +654,15 @@ class RIG(serial.Serial, object):
         '''
         if val is None:
             ret_val = self.send(self.__constant['mox']['READ'])
-            if self.__constant['mox']['ANSWER'].has_key(ret_val):
+            if ret_val in self.__constant['mox']['ANSWER']:
                 return self.__constant['mox']['ANSWER'][ret_val]
             else:
-                print 'FAIL'
-        elif self.__constant['mox']['SET'].has_key(val.upper()):
+                print('FAIL')
+        elif val.upper() in self.__constant['mox']['SET']:
             self.send(self.__constant['mox']['SET'][val.upper()])
             return self.mox()
         else:
-            print 'MOX: INVALID PARAMETER'
+            print('MOX: INVALID PARAMETER')
     
     def narrow(self, val=None):
         '''
@@ -674,15 +674,15 @@ class RIG(serial.Serial, object):
         '''
         if val is None:
             ret_val = self.send(self.__constant['narrow']['READ'])
-            if self.__constant['narrow']['ANSWER'].has_key(ret_val):
+            if ret_val in self.__constant['narrow']['ANSWER']:
                 return self.__constant['narrow']['ANSWER'][ret_val]
             else:
-                print 'FAIL'
-        elif self.__constant['narrow']['SET'].has_key(val.upper()):
+                print('FAIL')
+        elif val.upper() in self.__constant['narrow']['SET']:
             self.send(self.__constant['narrow']['SET'][val.upper()])
             return self.narrow()
         else:
-            print 'NARROW: INVALID PARAMETER'
+            print('NARROW: INVALID PARAMETER')
     
     def nb(self, val=None):
         ''' Noise Blanker and level'''
@@ -731,7 +731,7 @@ class RIG(serial.Serial, object):
             self.send(self.__constant['rf_power']['SET'].replace('nnn', str(val).rjust(3,'0')))
             return self.rf_power()
         else:
-            print 'RF_POWER: OUT OF RANGE'
+            print('RF_POWER: OUT OF RANGE')
 
     def rf_gain(self, val=None):
         '''
@@ -748,7 +748,7 @@ class RIG(serial.Serial, object):
             self.send(self.__constant['rf_gain']['SET'].replace('nnn', str(val).rjust(3,'0')))
             return self.rf_gain()
         else:
-            print 'RF_GAIN: OUT OF RANGE'
+            print('RF_GAIN: OUT OF RANGE')
     def s(self):
         pass
 
@@ -771,7 +771,7 @@ class RIG(serial.Serial, object):
         low_val = int(center) -  step * 1000 * samples / 2
         for freq in [low_val + step * 1000 * x for x in range(samples+1)]:
             cmd = 'FA'+str(int(freq)).rjust(9,'0')+';'
-            print cmd
+            print(cmd)
             self.rig_set(cmd.encode('utf-8'))
             time.sleep(0.015)
             # scp_list.append(int((self.rig_read('SM0;').decode('utf-8')[3:6])))
@@ -822,7 +822,7 @@ class RIG(serial.Serial, object):
         elif vfo_to in ('A','B') and self.check_freq(vfo_from):
             return self.send('F' + vfo_to + str(vfo_from).rjust(9,'0') + ';')
         else:
-            print 'VFO: INVALID PARAM'
+            print('VFO: INVALID PARAM')
     
     def vfo_info(self, val=None):
         '''
@@ -852,7 +852,7 @@ class RIG(serial.Serial, object):
             ret_a = self.vfo_info('A')
             ret_b = self.vfo_info('B')
             return {'A':ret_a, 'B':ret_b}
-        elif self.__constant['vfo_info']['READ'].has_key(val.upper()):
+        elif val.upper() in self.__constant['vfo_info']['READ']:
             ret_val = self.send(self.__constant['vfo_info']['READ'][val.upper()])
             p1 = ret_val[2:5]
             p2 = ret_val[5:14]
@@ -873,7 +873,7 @@ class RIG(serial.Serial, object):
                 'shift': p10
             }
         else:
-            print 'VFO_INFO: INVALID PARAMETER'
+            print('VFO_INFO: INVALID PARAMETER')
     
     def vox(self, status=None, delay=None, gain=None):
         pass

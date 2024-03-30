@@ -37,10 +37,10 @@ class Button(object):
             self.surface.blit(self.button_up_image,(self.button_rect[0],self.button_rect[1]))
 
 def func1():
-    print 'func1'
+    print('func1')
 
 def func2():
-    print 'func2'
+    print('func2')
 
 def main():
     func_dict = {
@@ -56,12 +56,12 @@ def main():
     # global screen
 
     buttons = {}
-    for gp_name, gp_member in btn_config['GROUP'].iteritems():
+    for gp_name, gp_member in btn_config['GROUP'].items():
         buttons[gp_name] = {}
         for btn in gp_member:
             buttons[gp_name][btn] = btn_config['BUTTONS'][btn]
 
-    print buttons
+    print(buttons)
     FPS = 30
     fpsClock = pygame.time.Clock()
     btn_1 = Button(screen, 'button_up.png', 'button_down.png', Rect(100,100,70,46), 'func1', func_dict)
